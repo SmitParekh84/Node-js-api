@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practical Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <form id="taskForm">
+        <center>
+            <h2>Task Management</h2>
+            <input type="hidden" id="idHidden" name="idHidden"><br><br><br>
+            <b>Enter Title : </b><input type="text" id="txtTitle" placeholder="Enter Book Title" name="txtTitle">
+            <p id="pTitle"></p><br><br></br>
+            <b>Completed(True/False) :</b>
+            <select id="DDLCompleted">
+                <option id="oTrue">True</option>
+                <option id="oFalse">False</option>
+            </select> <br><br><br>
+            <input type="submit" value="Submit">
+        </center><br><br><br>
+        <div>
+            <center>
+                <h3>Task Details</h3>
+                <ul id="taskList"></ul>
+            </center>
+        </div>
+    </form>
+
+    <script>
+        async function funcRegex() {
+            const id = document.getElementById('idHidden').value;
+            const title = document.getElementById('txtTitle').value;
+            const completed = document.getElementById('DDLCompleted').value;
+            const regexTitle = /^[a-zA-Z ]{3,}$/;
+            var isValid = true;
+            if (!(regexTitle.test(title))) {
+                isValid = false;
+                document.getElementById('pTitle').innerHTML = "Please Enter Only Alphabets in Title and Not less than 3";
+                document.getElementById('pTitle').style = 'color : red';
+            }
+            else {
+                document.getElementById('pTitle').innerHTML = "";
+            }
+            if (isValid) {
+                const url = id ? `/tasks/${id}` : '/tasks';
+                const method = id ? 'PUT' : 'POST';
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-type': 'application/json' },
+                    body: JSON.stringify({ title, completed })
+                });
+                fetchTasks();
+                document.getElementById('txtTitle').value = "";
+            }
+        }
+        async function submitForm(event) {
+            event.preventDefault();
+            funcRegex();
+        }
+        async function fetchTasks() {
+            const response = await fetch('/tasks');
+            const tasks = await response.json();
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.innerHTML = `<b>Title : </b>${task.title} |  <b>Completed :</b> ${task.completed}`;
+                li.innerHTML += `<button onclick='editTask(${task.id})'>Edit</button>
+                                <button onclick='deleteTask(${task.id})'>Delete</button>`;
+                taskList.appendChild(li);
+            });
+        }
+        async function deleteTask(id) {
+            await fetch(`/tasks/${id}`, { method: 'DELETE' });
+            fetchTasks();
+        }
+        async function editTask(id) {
+            const response = await fetch(`/tasks/${id}`);
+            const task = await response.json();
+            document.getElementById('idHidden').value = task.id;
+            document.getElementById('txtTitle').value = task.title;
+            document.getElementById('DDLCompleted').selected = task.completed;
+        }
+        document.getElementById('taskForm').addEventListener('submit', submitForm);
+        fetchTasks();
+    </script>
+</body>
+
+</html>
